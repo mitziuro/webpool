@@ -1,0 +1,21 @@
+
+entity Pool {
+    name String,
+    startDate Instant, 
+    endDate Instant,
+    owner String,
+    type String,
+    options String
+    
+}
+
+entity PoolEntry {
+    pool String
+    optionValue String
+    option String
+    date Instant,
+    owner String,
+    type String,
+    isFinal Boolean
+}
+
