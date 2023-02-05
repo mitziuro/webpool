@@ -1,0 +1,47 @@
+{
+  "applications": "*",
+  "changelogDate": "20230205131607",
+  "clientRootFolder": "webpool",
+  "databaseType": "mongodb",
+  "dto": "no",
+  "embedded": false,
+  "entityTableName": "pool_entry",
+  "fields": [
+    {
+      "fieldName": "pool",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "optionValue",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "option",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "date",
+      "fieldType": "Instant"
+    },
+    {
+      "fieldName": "owner",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "type",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "isFinal",
+      "fieldType": "Boolean"
+    }
+  ],
+  "fluentMethods": true,
+  "jpaMetamodelFiltering": false,
+  "microserviceName": "webpool",
+  "name": "PoolEntry",
+  "pagination": "no",
+  "readOnly": false,
+  "relationships": [],
+  "service": "no"
+}
