@@ -6,6 +6,8 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
@@ -34,6 +36,18 @@ public class JWTFilter extends GenericFilterBean {
             Authentication authentication = this.tokenProvider.getAuthentication(jwt);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
+
+        ((HttpServletResponse)servletResponse).setHeader("Access-Control-Allow-Origin", "*");
+        ((HttpServletResponse)servletResponse).setHeader("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH,OPTIONS");
+        ((HttpServletResponse)servletResponse).setHeader("Access-Control-Max-Age", "86400"); // 24 Hours
+        ((HttpServletResponse)servletResponse).setHeader("Access-Control-Allow-Headers", "authorization");
+
+        // For HTTP OPTIONS verb/method reply with ACCEPTED status code -- per CORS handshake
+        if (httpServletRequest.getMethod().equals("OPTIONS")) {
+            ((HttpServletResponse)servletResponse).setStatus(HttpServletResponse.SC_ACCEPTED);
+            return;
+        }
+
         filterChain.doFilter(servletRequest, servletResponse);
     }
 
