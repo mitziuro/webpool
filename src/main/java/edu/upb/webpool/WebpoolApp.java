@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import javax.annotation.PostConstruct;
+import javax.net.ssl.SSLContext;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +66,15 @@ public class WebpoolApp {
      * @param args the command line arguments.
      */
     public static void main(String[] args) {
+
+        try {
+            SSLContext ctx = SSLContext.getInstance("TLSv1.2");
+            ctx.init(null, null, null);
+            SSLContext.setDefault(ctx);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
         SpringApplication app = new SpringApplication(WebpoolApp.class);
         DefaultProfileUtil.addDefaultProfile(app);
         Environment env = app.run(args).getEnvironment();

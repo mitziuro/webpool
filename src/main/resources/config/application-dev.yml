@@ -47,7 +47,7 @@ spring:
       # it can be set to any label, branch or commit of the configuration source Git repository
   data:
     mongodb:
-      uri: mongodb://localhost:27017
+      uri: mongodb+srv://mitziuro:bianka@cluster0.9g2rvzg.mongodb.net/?retryWrites=true&w=majority
       database: webpool
   messages:
     cache-duration: PT1S # 1 second, see the ISO 8601 standard
