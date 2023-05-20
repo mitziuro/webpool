@@ -43,8 +43,8 @@ class PoolResourceIT {
     private static final String DEFAULT_TYPE = "AAAAAAAAAA";
     private static final String UPDATED_TYPE = "BBBBBBBBBB";
 
-    private static final String DEFAULT_OPTIONS = "AAAAAAAAAA";
-    private static final String UPDATED_OPTIONS = "BBBBBBBBBB";
+    private static final String[] DEFAULT_OPTIONS = new String[] {"AAAAAAAAAA"};
+    private static final String[] UPDATED_OPTIONS = new String[] {"BBBBBBBB"};
 
     private static final String ENTITY_API_URL = "/api/pools";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";

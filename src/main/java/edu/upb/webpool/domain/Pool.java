@@ -34,7 +34,32 @@ public class Pool implements Serializable {
     private String type;
 
     @Field("options")
-    private String options;
+    private String[] options;
+
+    @Field("final")
+    private String finalValue;
+
+    public String[] getUsers() {
+        return users;
+    }
+
+    public void setUsers(String[] users) {
+        this.users = users;
+    }
+
+    public boolean isVote() {
+        return vote;
+    }
+
+    public void setVote(boolean vote) {
+        this.vote = vote;
+    }
+
+    @Field("users")
+    private String[] users;
+
+    @Field("vote")
+    private boolean vote;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -116,16 +141,16 @@ public class Pool implements Serializable {
         this.type = type;
     }
 
-    public String getOptions() {
+    public String[] getOptions() {
         return this.options;
     }
 
-    public Pool options(String options) {
+    public Pool options(String[] options) {
         this.setOptions(options);
         return this;
     }
 
-    public void setOptions(String options) {
+    public void setOptions(String[] options) {
         this.options = options;
     }
 
@@ -140,6 +165,14 @@ public class Pool implements Serializable {
             return false;
         }
         return id != null && id.equals(((Pool) o).id);
+    }
+
+    public String getFinal() {
+        return finalValue;
+    }
+
+    public void setFinal(String finalValue) {
+        this.finalValue = finalValue;
     }
 
     @Override

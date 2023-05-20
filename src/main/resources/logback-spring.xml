@@ -39,7 +39,8 @@
     <logger name="ch.qos.logback" level="WARN"/>
     <logger name="com.netflix" level="WARN"/>
     <logger name="com.netflix.config.sources.URLConfigurationSource" level="ERROR"/>
-    <logger name="com.netflix.discovery" level="INFO"/>
+    <logger name="com.netflix.discovery" level="OFF"/>
+    <logger name="c.n.d.s.t.d" level="OFF"/>
     <logger name="com.ryantenney" level="WARN"/>
     <logger name="com.sun" level="WARN"/>
     <logger name="com.zaxxer" level="WARN"/>

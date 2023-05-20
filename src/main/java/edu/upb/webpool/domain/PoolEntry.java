@@ -28,7 +28,7 @@ public class PoolEntry implements Serializable {
     private String option;
 
     @Field("date")
-    private Instant date;
+    private Instant date = Instant.now();
 
     @Field("owner")
     private String owner;

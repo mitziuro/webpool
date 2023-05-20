@@ -1,5 +1,6 @@
 package edu.upb.webpool.web.rest;
 
+import edu.upb.webpool.domain.Pool;
 import edu.upb.webpool.domain.PoolEntry;
 import edu.upb.webpool.repository.PoolEntryRepository;
 import edu.upb.webpool.web.rest.errors.BadRequestAlertException;
@@ -49,6 +50,7 @@ public class PoolEntryResource {
         if (poolEntry.getId() != null) {
             throw new BadRequestAlertException("A new poolEntry cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        poolEntryRepository.findByPoolAndOwner(poolEntry.getPool(), poolEntry.getOwner()).stream().forEach(p -> poolEntryRepository.delete(p));
         PoolEntry result = poolEntryRepository.save(poolEntry);
         return ResponseEntity
             .created(new URI("/api/pool-entries/" + result.getId()))
@@ -188,5 +190,20 @@ public class PoolEntryResource {
         log.debug("REST request to delete PoolEntry : {}", id);
         poolEntryRepository.deleteById(id);
         return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, true, ENTITY_NAME, id)).build();
+    }
+
+    /**
+     * {@code GET  /pools} : get all the pools.
+     *
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of pools in body.
+     */
+    @GetMapping("/pool-entries/{pool}/voter/{email}")
+    public List<PoolEntry> getPoolForEmail(@PathVariable String pool, @PathVariable String email) {
+        return poolEntryRepository.findByPoolAndOwner(pool, email);
+    }
+
+    @GetMapping("/pool-entries/all/{pool}")
+    public List<PoolEntry> getPool(@PathVariable String pool) {
+        return poolEntryRepository.findByPool(pool);
     }
 }
