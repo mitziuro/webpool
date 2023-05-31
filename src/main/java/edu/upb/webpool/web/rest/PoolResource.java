@@ -5,16 +5,27 @@ import edu.upb.webpool.repository.PoolRepository;
 import edu.upb.webpool.web.rest.errors.BadRequestAlertException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
+
+import javax.servlet.http.HttpServletRequest;
+
+import static java.util.Arrays.asList;
 
 /**
  * REST controller for managing {@link edu.upb.webpool.domain.Pool}.
@@ -149,9 +160,37 @@ public class PoolResource {
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of pools in body.
      */
     @GetMapping("/pools")
-    public List<Pool> getAllPools() {
+    public List<Pool> getAllPools(HttpServletRequest request) {
         log.debug("REST request to get all Pools");
+        System.out.println("****" + SecurityContextHolder.getContext().getAuthentication().getName());
+        String type = request.getParameter("type");
+
+        if(type == null)
+            return poolRepository.findAll();
+        if(type.equals("1"))
+            return poolRepository.findByOwner(SecurityContextHolder.getContext().getAuthentication().getName());
+        if(type.equals("2")) {
+            Set<Pool> results= new HashSet<>();
+            results.addAll(filter(poolRepository.findByFinalValueIsNotNullAndUsers(asList(SecurityContextHolder.getContext().getAuthentication().getName()))));
+            results.addAll(filter(poolRepository.findByFinalValueIsNotNullAndOwnerAndVote(SecurityContextHolder.getContext().getAuthentication().getName(), true)));
+            return new ArrayList<>(results);
+        }
+        if(type.equals("3")) {
+            Set<Pool> results= new HashSet<>();
+            results.addAll(filter(poolRepository.findByFinalValueIsNullAndUsers(asList(SecurityContextHolder.getContext().getAuthentication().getName()))));
+            results.addAll(filter(poolRepository.findByFinalValueIsNullAndOwnerAndVote(SecurityContextHolder.getContext().getAuthentication().getName(), true)));
+            return new ArrayList<>(results);
+        }
+
         return poolRepository.findAll();
+
+    }
+
+    private List<Pool> filter(List<Pool> data) {
+        return data.stream()
+            .filter(d -> d.getStartDate() == null|| d.getStartDate().isBefore(Instant.now()))
+            .filter(d -> d.getEndDate() == null || d.getEndDate().isAfter(Instant.now()))
+            .collect(Collectors.toList());
     }
 
     /**

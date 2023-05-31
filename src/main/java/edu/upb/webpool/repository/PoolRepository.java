@@ -14,4 +14,13 @@ import java.util.List;
 @Repository
 public interface PoolRepository extends MongoRepository<Pool, String> {
 
+    List<Pool> findByOwner(String owner);
+
+    List<Pool> findByFinalValueIsNotNullAndUsers(List<String> users);
+    List<Pool> findByFinalValueIsNullAndUsers(List<String> users);
+
+    List<Pool> findByFinalValueIsNullAndOwnerAndVote(String owner, boolean vote);
+    List<Pool> findByFinalValueIsNotNullAndOwnerAndVote(String owner, boolean vote);
+
+
 }
