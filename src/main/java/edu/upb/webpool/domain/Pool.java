@@ -61,6 +61,9 @@ public class Pool implements Serializable {
     @Field("vote")
     private boolean vote;
 
+    @Field("otp")
+    private boolean otp;
+
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
     public String getId() {
@@ -83,6 +86,14 @@ public class Pool implements Serializable {
     public Pool name(String name) {
         this.setName(name);
         return this;
+    }
+
+    public boolean isOtp() {
+        return otp;
+    }
+
+    public void setOtp(boolean freeOTP) {
+        this.otp = freeOTP;
     }
 
     public void setName(String name) {

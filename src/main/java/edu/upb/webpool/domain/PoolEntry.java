@@ -3,6 +3,7 @@ package edu.upb.webpool.domain;
 import java.io.Serializable;
 import java.time.Instant;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -39,6 +40,9 @@ public class PoolEntry implements Serializable {
     @Field("is_final")
     private Boolean isFinal;
 
+    @Transient
+    private String otp;
+
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
     public String getId() {
@@ -61,6 +65,14 @@ public class PoolEntry implements Serializable {
     public PoolEntry pool(String pool) {
         this.setPool(pool);
         return this;
+    }
+
+    public String getOtp() {
+        return otp;
+    }
+
+    public void setOtp(String otp) {
+        this.otp = otp;
     }
 
     public void setPool(String pool) {
