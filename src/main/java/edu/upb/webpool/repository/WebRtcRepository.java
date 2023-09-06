@@ -16,4 +16,6 @@ public interface WebRtcRepository extends MongoRepository<WebRtc, String> {
     List<WebRtc> findByPoolAndOwner(String pool, String owner);
 
     List<WebRtc> findByPool(String pool);
+
+    void deleteByPoolAndOwner(String pool, String owner);
 }

@@ -3,8 +3,10 @@ package edu.upb.webpool.web.rest;
 import com.netflix.discovery.converters.Auto;
 import edu.upb.webpool.domain.Pool;
 import edu.upb.webpool.domain.PoolEntry;
+import edu.upb.webpool.domain.Sms;
 import edu.upb.webpool.repository.PoolEntryRepository;
 import edu.upb.webpool.repository.PoolRepository;
+import edu.upb.webpool.repository.SmsRepository;
 import edu.upb.webpool.web.rest.errors.BadRequestAlertException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -39,6 +41,9 @@ public class PoolEntryResource {
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
 
+    @Autowired
+    private SmsRepository smsRepository;
+
     private final PoolEntryRepository poolEntryRepository;
 
     @Autowired
@@ -70,7 +75,10 @@ public class PoolEntryResource {
 
         if(pool.isOtp()) {
             if(!OtpValidator.validate(poolEntry.getOtp(), SecurityContextHolder.getContext().getAuthentication().getName())) {
-                throw new Exception();
+                List<Sms> sms = smsRepository.findByPoolAndOwner(poolEntry.getPool(), poolEntry.getOwner());
+                if(sms.isEmpty() || !sms.get(0).getData().equals(poolEntry.getOtp())) {
+                    throw new Exception();
+                }
             }
         }
 

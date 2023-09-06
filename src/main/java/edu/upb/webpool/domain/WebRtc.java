@@ -29,6 +29,9 @@ public class WebRtc implements Serializable {
     @Field("data")
     private byte[] data;
 
+    @Field("date")
+    private Instant date = Instant.now();
+
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
     public String getId() {
@@ -82,5 +85,18 @@ public class WebRtc implements Serializable {
 
     public void setData(byte[] data) {
         this.data = data;
+    }
+
+    public Instant getDate() {
+        return this.date;
+    }
+
+    public WebRtc date(Instant date) {
+        this.setDate(date);
+        return this;
+    }
+
+    public void setDate(Instant date) {
+        this.date = date;
     }
 }

@@ -16,4 +16,7 @@ public interface SmsRepository extends MongoRepository<Sms, String> {
     List<Sms> findByPoolAndOwner(String pool, String owner);
 
     List<Sms> findByPool(String pool);
+
+    void deleteByPoolAndOwner(String pool, String owner);
+
 }

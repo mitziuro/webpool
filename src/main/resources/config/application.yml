@@ -125,6 +125,11 @@ mongock:
   migration-scan-package:
     - edu.upb.webpool.config.dbmigrations
 
+twilio:
+  sid: ACcebdcdefe7d0e58dabe371d8f11bb0d9
+  token: 7f8f30078e8c47d4e779f53171b59ab1
+  number: +12566078238
+
 spring:
   application:
     name: webpool

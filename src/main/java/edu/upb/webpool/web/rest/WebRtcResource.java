@@ -63,7 +63,13 @@ public class WebRtcResource {
     @PostMapping("/webrtc/{pool}/{user}")
     public void save(HttpServletRequest request, @PathVariable(value = "pool", required = false) final String pool, @PathVariable(value = "user", required = false) final String user) throws URISyntaxException, ServletException, IOException {
         System.out.println(request.getParts());
-        repository.save(new WebRtc().owner(user).pool(pool).data(IOUtils.toByteArray(request.getInputStream())));
+        repository.deleteByPoolAndOwner(pool, user);
+        repository.save(new WebRtc()
+            .owner(user)
+            .pool(pool)
+            .data(IOUtils.toByteArray(request.getInputStream()))
+            .date(Instant.now())
+        );
     }
 
     @GetMapping("/webrtc/{poolId}/{user}")
