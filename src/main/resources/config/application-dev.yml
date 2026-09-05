@@ -46,9 +46,12 @@ spring:
       label: main # toggle to switch to a different version of the configuration as stored in git
       # it can be set to any label, branch or commit of the configuration source Git repository
   data:
-    mongodb:
-      uri: ${MONGO_DB_URL:mongodb+srv://mitziuro:bianka@cluster0.9g2rvzg.mongodb.net/?retryWrites=true&w=majority}
-      database: webpool
+    cassandra:
+      contact-points: localhost
+      port: 9042
+      keyspace-name: webpool
+      local-datacenter: datacenter1
+      schema-action: none
   messages:
     cache-duration: PT1S # 1 second, see the ISO 8601 standard
   thymeleaf:

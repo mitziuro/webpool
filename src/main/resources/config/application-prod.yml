@@ -51,9 +51,24 @@ spring:
       label: main # toggle to switch to a different version of the configuration as stored in git
       # it can be set to any label, branch or commit of the configuration source Git repository
   data:
-    mongodb:
-      uri: mongodb://localhost:27017
-      database: webpool
+    cassandra:
+      contact-points: localhost
+      port: 9042
+      keyspace-name: webpool
+      local-datacenter: datacenter1
+      schema-action: none
+  mail:
+    host: sandbox.smtp.mailtrap.io
+    port: 2525
+    username: 8dff8b6562ffda
+    password: 07af4c6af9ffa7
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
   thymeleaf:
     cache: true
   sleuth:
@@ -114,6 +129,9 @@ jhipster:
       max-entries: 1000 # Number of objects in each cache entry
   registry:
     password: admin
+  mail:
+    base-url: http://localhost:9061
+    from: webpoolgateway@webpool.com
   security:
     authentication:
       jwt:

@@ -1,8 +1,8 @@
 package edu.upb.webpool.domain;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.data.cassandra.core.mapping.Column;
+import org.springframework.data.cassandra.core.mapping.PrimaryKey;
+import org.springframework.data.cassandra.core.mapping.Table;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -10,25 +10,25 @@ import java.time.Instant;
 /**
  * A PoolEntry.
  */
-@Document(collection = "sms")
+@Table("sms")
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Sms implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Id
+    @PrimaryKey
     private String id;
 
-    @Field("pool")
+    @Column("pool")
     private String pool;
 
-    @Field("owner")
+    @Column("owner")
     private String owner;
 
-    @Field("data")
+    @Column("data")
     private String data;
 
-    @Field("date")
+    @Column("date")
     private Instant date = Instant.now();
 
     // jhipster-needle-entity-add-field - JHipster will add fields here

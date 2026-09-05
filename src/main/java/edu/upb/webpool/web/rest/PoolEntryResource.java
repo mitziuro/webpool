@@ -1,20 +1,20 @@
 package edu.upb.webpool.web.rest;
 
-import com.netflix.discovery.converters.Auto;
 import edu.upb.webpool.domain.Pool;
 import edu.upb.webpool.domain.PoolEntry;
-import edu.upb.webpool.domain.Sms;
 import edu.upb.webpool.repository.PoolEntryRepository;
 import edu.upb.webpool.repository.PoolRepository;
-import edu.upb.webpool.repository.SmsRepository;
+import edu.upb.webpool.service.PoolEntrySignatureService;
+import edu.upb.webpool.service.VoteConfirmationValidator;
+import edu.upb.webpool.client.dto.VerifyResponse;
 import edu.upb.webpool.web.rest.errors.BadRequestAlertException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
-import edu.upb.webpool.web.rest.utils.OtpValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,16 +41,23 @@ public class PoolEntryResource {
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
 
-    @Autowired
-    private SmsRepository smsRepository;
-
     private final PoolEntryRepository poolEntryRepository;
+
+    private final VoteConfirmationValidator voteConfirmationValidator;
+
+    private final PoolEntrySignatureService poolEntrySignatureService;
 
     @Autowired
     private PoolRepository poolRepository;
 
-    public PoolEntryResource(PoolEntryRepository poolEntryRepository) {
+    public PoolEntryResource(
+        PoolEntryRepository poolEntryRepository,
+        VoteConfirmationValidator voteConfirmationValidator,
+        PoolEntrySignatureService poolEntrySignatureService
+    ) {
         this.poolEntryRepository = poolEntryRepository;
+        this.voteConfirmationValidator = voteConfirmationValidator;
+        this.poolEntrySignatureService = poolEntrySignatureService;
     }
 
     /**
@@ -66,6 +73,7 @@ public class PoolEntryResource {
         if (poolEntry.getId() != null) {
             throw new BadRequestAlertException("A new poolEntry cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        poolEntry.setId(UUID.randomUUID().toString());
 
         Pool pool = poolRepository.findById(poolEntry.getPool()).orElse(null);
 
@@ -73,17 +81,38 @@ public class PoolEntryResource {
             throw new Exception();
         }
 
-        if(pool.isOtp()) {
-            if(!OtpValidator.validate(poolEntry.getOtp(), SecurityContextHolder.getContext().getAuthentication().getName())) {
-                List<Sms> sms = smsRepository.findByPoolAndOwner(poolEntry.getPool(), poolEntry.getOwner());
-                if(sms.isEmpty() || !sms.get(0).getData().equals(poolEntry.getOtp())) {
-                    throw new Exception();
-                }
-            }
+        if (
+            SecurityContextHolder.getContext().getAuthentication() == null ||
+            !SecurityContextHolder.getContext().getAuthentication().isAuthenticated() ||
+            "anonymousUser".equals(SecurityContextHolder.getContext().getAuthentication().getName())
+        ) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.UNAUTHORIZED,
+                "Autentificarea este necesară pentru vot"
+            );
         }
+
+        String voterEmail = voteConfirmationValidator.resolveEmail(
+            SecurityContextHolder.getContext().getAuthentication().getName()
+        );
+        if (
+            !pool.isPublicAccess() &&
+            !voterEmail.equalsIgnoreCase(pool.getOwner()) &&
+            (pool.getUsers() == null || pool.getUsers().stream().noneMatch(voterEmail::equalsIgnoreCase))
+        ) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.FORBIDDEN,
+                "Acest sondaj este disponibil doar participanților invitați"
+            );
+        }
+        String confirmationMethod = voteConfirmationValidator.validate(pool, voterEmail, poolEntry.getOtp());
+        poolEntry.setOwner(voterEmail);
+
+        poolEntrySignatureService.sign(poolEntry);
 
         poolEntryRepository.findByPoolAndOwner(poolEntry.getPool(), poolEntry.getOwner()).stream().forEach(p -> poolEntryRepository.delete(p));
         PoolEntry result = poolEntryRepository.save(poolEntry);
+        voteConfirmationValidator.consume(confirmationMethod, voterEmail);
         return ResponseEntity
             .created(new URI("/api/pool-entries/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, ENTITY_NAME, result.getId()))
@@ -211,6 +240,23 @@ public class PoolEntryResource {
         return ResponseUtil.wrapOrNotFound(poolEntry);
     }
 
+    @GetMapping("/pool-entries/{id}/signature/verify")
+    public ResponseEntity<VerifyResponse> verifyPoolEntrySignature(@PathVariable String id) {
+        PoolEntry entry = poolEntryRepository
+            .findById(id)
+            .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.NOT_FOUND,
+                "Vote not found"
+            ));
+        if (entry.getVoteHash() == null || entry.getDigitalSignature() == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY,
+                "The vote does not have a cryptographic signature"
+            );
+        }
+        return ResponseEntity.ok(poolEntrySignatureService.verify(entry));
+    }
+
     /**
      * {@code DELETE  /pool-entries/:id} : delete the "id" poolEntry.
      *
@@ -236,6 +282,40 @@ public class PoolEntryResource {
 
     @GetMapping("/pool-entries/all/{pool}")
     public List<PoolEntry> getPool(@PathVariable String pool) {
+        Pool poll = poolRepository.findById(pool).orElse(null);
+        if (poll == null || !poll.isShowIntermediateResults()) {
+            return java.util.Collections.emptyList();
+        }
+        return poolEntryRepository.findByPool(pool);
+    }
+
+    @GetMapping("/pool-entries/results/{pool}")
+    public List<PoolEntry> getOrganizerResults(@PathVariable String pool) {
+        Pool poll = poolRepository
+            .findById(pool)
+            .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.NOT_FOUND,
+                "Sondajul nu a fost găsit"
+            ));
+        if (
+            SecurityContextHolder.getContext().getAuthentication() == null ||
+            !SecurityContextHolder.getContext().getAuthentication().isAuthenticated() ||
+            "anonymousUser".equals(SecurityContextHolder.getContext().getAuthentication().getName())
+        ) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.UNAUTHORIZED,
+                "Autentificarea este necesară"
+            );
+        }
+        String requesterEmail = voteConfirmationValidator.resolveEmail(
+            SecurityContextHolder.getContext().getAuthentication().getName()
+        );
+        if (!requesterEmail.equalsIgnoreCase(poll.getOwner())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.FORBIDDEN,
+                "Doar organizatorul poate vedea răspunsurile individuale"
+            );
+        }
         return poolEntryRepository.findByPool(pool);
     }
 }

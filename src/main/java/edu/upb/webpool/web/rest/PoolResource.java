@@ -2,6 +2,8 @@ package edu.upb.webpool.web.rest;
 
 import edu.upb.webpool.domain.Pool;
 import edu.upb.webpool.repository.PoolRepository;
+import edu.upb.webpool.repository.UserSecuritySettingsRepository;
+import edu.upb.webpool.service.PoolResultsEmailService;
 import edu.upb.webpool.web.rest.errors.BadRequestAlertException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -12,14 +14,17 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
@@ -42,9 +47,17 @@ public class PoolResource {
     private String applicationName;
 
     private final PoolRepository poolRepository;
+    private final UserSecuritySettingsRepository userRepository;
+    private final PoolResultsEmailService poolResultsEmailService;
 
-    public PoolResource(PoolRepository poolRepository) {
+    public PoolResource(
+        PoolRepository poolRepository,
+        UserSecuritySettingsRepository userRepository,
+        PoolResultsEmailService poolResultsEmailService
+    ) {
         this.poolRepository = poolRepository;
+        this.userRepository = userRepository;
+        this.poolResultsEmailService = poolResultsEmailService;
     }
 
     /**
@@ -60,6 +73,8 @@ public class PoolResource {
         if (pool.getId() != null) {
             throw new BadRequestAlertException("A new pool cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        pool.setId(UUID.randomUUID().toString());
+        pool.setOwner(currentUser());
         Pool result = poolRepository.save(pool);
         return ResponseEntity
             .created(new URI("/api/pools/" + result.getId()))
@@ -88,15 +103,32 @@ public class PoolResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!poolRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
+        Pool existingPool = poolRepository
+            .findById(id)
+            .orElseThrow(() -> new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound"));
+        ensureOwner(existingPool);
+        pool.setOwner(existingPool.getOwner());
+        pool.setResultsSentAt(
+            Objects.equals(existingPool.getEndDate(), pool.getEndDate()) ? existingPool.getResultsSentAt() : null
+        );
 
         Pool result = poolRepository.save(pool);
         return ResponseEntity
             .ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, pool.getId()))
             .body(result);
+    }
+
+    @PostMapping("/pools/{id}/send-results")
+    public ResponseEntity<Pool> sendResults(@PathVariable String id) {
+        Pool pool = poolRepository
+            .findById(id)
+            .orElseThrow(() -> new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound"));
+        ensureOwner(pool);
+        if (pool.getEndDate() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Rezultatele vor fi trimise automat la expirarea sondajului");
+        }
+        return ResponseEntity.ok(poolResultsEmailService.sendResults(pool));
     }
 
     /**
@@ -121,9 +153,10 @@ public class PoolResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!poolRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
+        Pool targetPool = poolRepository
+            .findById(id)
+            .orElseThrow(() -> new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound"));
+        ensureOwner(targetPool);
 
         Optional<Pool> result = poolRepository
             .findById(pool.getId())
@@ -137,9 +170,6 @@ public class PoolResource {
                 if (pool.getEndDate() != null) {
                     existingPool.setEndDate(pool.getEndDate());
                 }
-                if (pool.getOwner() != null) {
-                    existingPool.setOwner(pool.getOwner());
-                }
                 if (pool.getType() != null) {
                     existingPool.setType(pool.getType());
                 }
@@ -152,6 +182,30 @@ public class PoolResource {
             .map(poolRepository::save);
 
         return ResponseUtil.wrapOrNotFound(result, HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, pool.getId()));
+    }
+
+    private String currentUser() {
+        if (
+            SecurityContextHolder.getContext().getAuthentication() == null ||
+            !SecurityContextHolder.getContext().getAuthentication().isAuthenticated() ||
+            "anonymousUser".equals(SecurityContextHolder.getContext().getAuthentication().getName())
+        ) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Autentificarea este necesară");
+        }
+        String identity = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository
+            .findOneByEmail(identity.toLowerCase())
+            .orElseGet(() -> userRepository.findOneByLogin(identity.toLowerCase()).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Utilizatorul nu a fost găsit")
+            ))
+            .getEmail()
+            .toLowerCase();
+    }
+
+    private void ensureOwner(Pool pool) {
+        if (!currentUser().equalsIgnoreCase(pool.getOwner())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Doar creatorul poate modifica cerințele sondajului");
+        }
     }
 
     /**
@@ -169,18 +223,17 @@ public class PoolResource {
             return poolRepository.findAll();
         if(type.equals("1"))
             return poolRepository.findByOwner(SecurityContextHolder.getContext().getAuthentication().getName());
-        if(type.equals("2")) {
-            Set<Pool> results= new HashSet<>();
-            results.addAll(filter(poolRepository.findByFinalValueIsNotNullAndUsers(asList(SecurityContextHolder.getContext().getAuthentication().getName()))));
-            results.addAll(filter(poolRepository.findByFinalValueIsNotNullAndOwnerAndVote(SecurityContextHolder.getContext().getAuthentication().getName(), true)));
-            return new ArrayList<>(results);
-        }
-        if(type.equals("3")) {
-            Set<Pool> results= new HashSet<>();
-            results.addAll(filter(poolRepository.findByFinalValueIsNullAndUsers(asList(SecurityContextHolder.getContext().getAuthentication().getName()))));
-            results.addAll(filter(poolRepository.findByFinalValueIsNullAndOwnerAndVote(SecurityContextHolder.getContext().getAuthentication().getName(), true)));
-            return new ArrayList<>(results);
-        }
+        String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
+        if(type.equals("2"))
+            return filter(poolRepository.findAll()).stream()
+                .filter(pool -> pool.getFinal() != null)
+                .filter(pool -> pool.getUsers().contains(currentUser) || (pool.isVote() && currentUser.equals(pool.getOwner())))
+                .collect(Collectors.toList());
+        if(type.equals("3"))
+            return filter(poolRepository.findAll()).stream()
+                .filter(pool -> pool.getFinal() == null)
+                .filter(pool -> pool.getUsers().contains(currentUser) || (pool.isVote() && currentUser.equals(pool.getOwner())))
+                .collect(Collectors.toList());
 
         return poolRepository.findAll();
 

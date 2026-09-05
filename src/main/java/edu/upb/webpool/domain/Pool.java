@@ -2,48 +2,56 @@ package edu.upb.webpool.domain;
 
 import java.io.Serializable;
 import java.time.Instant;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.springframework.data.cassandra.core.mapping.Column;
+import org.springframework.data.cassandra.core.mapping.PrimaryKey;
+import org.springframework.data.cassandra.core.mapping.Table;
 
 /**
  * A Pool.
  */
-@Document(collection = "pool")
+@Table("pools")
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Pool implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Id
+    @PrimaryKey
     private String id;
 
-    @Field("name")
+    @Column("name")
     private String name;
 
-    @Field("start_date")
+    @Column("start_date")
     private Instant startDate;
 
-    @Field("end_date")
+    @Column("end_date")
     private Instant endDate;
 
-    @Field("owner")
+    @Column("results_sent_at")
+    private Instant resultsSentAt;
+
+    @Column("owner")
     private String owner;
 
-    @Field("type")
+    @Column("type")
     private String type;
 
-    @Field("options")
-    private String[] options;
+    @Column("options")
+    private List<String> options = new ArrayList<>();
 
-    @Field("final")
+    @Column("final_value")
     private String finalValue;
 
-    public String[] getUsers() {
+    public Set<String> getUsers() {
         return users;
     }
 
-    public void setUsers(String[] users) {
+    public void setUsers(Set<String> users) {
         this.users = users;
     }
 
@@ -55,14 +63,23 @@ public class Pool implements Serializable {
         this.vote = vote;
     }
 
-    @Field("users")
-    private String[] users;
+    @Column("users")
+    private Set<String> users = new HashSet<>();
 
-    @Field("vote")
+    @Column("vote")
     private boolean vote;
 
-    @Field("otp")
+    @Column("otp")
     private boolean otp;
+
+    @Column("show_intermediate_results")
+    private boolean showIntermediateResults;
+
+    @Column("video_answers_enabled")
+    private boolean videoAnswersEnabled;
+
+    @Column("public_access")
+    private boolean publicAccess;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -126,6 +143,14 @@ public class Pool implements Serializable {
         this.endDate = endDate;
     }
 
+    public Instant getResultsSentAt() {
+        return resultsSentAt;
+    }
+
+    public void setResultsSentAt(Instant resultsSentAt) {
+        this.resultsSentAt = resultsSentAt;
+    }
+
     public String getOwner() {
         return this.owner;
     }
@@ -152,17 +177,46 @@ public class Pool implements Serializable {
         this.type = type;
     }
 
-    public String[] getOptions() {
+    public List<String> getOptions() {
         return this.options;
     }
 
     public Pool options(String[] options) {
+        this.setOptions(options == null ? null : Arrays.asList(options));
+        return this;
+    }
+
+    public Pool options(List<String> options) {
         this.setOptions(options);
         return this;
     }
 
-    public void setOptions(String[] options) {
+    public void setOptions(List<String> options) {
         this.options = options;
+    }
+
+    public boolean isShowIntermediateResults() {
+        return showIntermediateResults;
+    }
+
+    public void setShowIntermediateResults(boolean showIntermediateResults) {
+        this.showIntermediateResults = showIntermediateResults;
+    }
+
+    public boolean isVideoAnswersEnabled() {
+        return videoAnswersEnabled;
+    }
+
+    public void setVideoAnswersEnabled(boolean videoAnswersEnabled) {
+        this.videoAnswersEnabled = videoAnswersEnabled;
+    }
+
+    public boolean isPublicAccess() {
+        return publicAccess;
+    }
+
+    public void setPublicAccess(boolean publicAccess) {
+        this.publicAccess = publicAccess;
     }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here

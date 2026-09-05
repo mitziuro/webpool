@@ -1,44 +1,72 @@
 package edu.upb.webpool.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.time.Instant;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.data.cassandra.core.mapping.Column;
+import org.springframework.data.cassandra.core.mapping.PrimaryKey;
+import org.springframework.data.cassandra.core.mapping.Table;
 
 /**
  * A PoolEntry.
  */
-@Document(collection = "pool_entry")
+@Table("pool_entries")
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class PoolEntry implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Id
+    @PrimaryKey
     private String id;
 
-    @Field("pool")
+    @Column("pool")
     private String pool;
 
-    @Field("option_value")
+    @Column("option_value")
     private String optionValue;
 
-    @Field("option")
+    @Column("option")
     private String option;
 
-    @Field("date")
+    @Column("date")
     private Instant date = Instant.now();
 
-    @Field("owner")
+    @Column("owner")
     private String owner;
 
-    @Field("type")
+    @Column("type")
     private String type;
 
-    @Field("is_final")
+    @Column("is_final")
     private Boolean isFinal;
+
+    @Column("video_attached")
+    private Boolean videoAttached = false;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column("vote_hash")
+    private String voteHash;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column("digital_signature")
+    private String digitalSignature;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column("hash_algorithm")
+    private String hashAlgorithm;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column("signature_algorithm")
+    private String signatureAlgorithm;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column("signature_key_id")
+    private String signatureKeyId;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column("signed_at")
+    private Instant signedAt;
 
     @Transient
     private String otp;
@@ -156,6 +184,27 @@ public class PoolEntry implements Serializable {
     public void setIsFinal(Boolean isFinal) {
         this.isFinal = isFinal;
     }
+
+    public Boolean getVideoAttached() {
+        return videoAttached;
+    }
+
+    public void setVideoAttached(Boolean videoAttached) {
+        this.videoAttached = videoAttached;
+    }
+
+    public String getVoteHash() { return voteHash; }
+    public void setVoteHash(String voteHash) { this.voteHash = voteHash; }
+    public String getDigitalSignature() { return digitalSignature; }
+    public void setDigitalSignature(String digitalSignature) { this.digitalSignature = digitalSignature; }
+    public String getHashAlgorithm() { return hashAlgorithm; }
+    public void setHashAlgorithm(String hashAlgorithm) { this.hashAlgorithm = hashAlgorithm; }
+    public String getSignatureAlgorithm() { return signatureAlgorithm; }
+    public void setSignatureAlgorithm(String signatureAlgorithm) { this.signatureAlgorithm = signatureAlgorithm; }
+    public String getSignatureKeyId() { return signatureKeyId; }
+    public void setSignatureKeyId(String signatureKeyId) { this.signatureKeyId = signatureKeyId; }
+    public Instant getSignedAt() { return signedAt; }
+    public void setSignedAt(Instant signedAt) { this.signedAt = signedAt; }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
 

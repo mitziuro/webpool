@@ -48,7 +48,7 @@ public class SecurityConfiguration {
         .and()
             .authorizeRequests()
             .antMatchers("/api/authenticate").permitAll()
-            .antMatchers("/api/admin/**").permitAll()//.hasAuthority(AuthoritiesConstants.ADMIN)
+            .antMatchers("/api/admin/**").hasAuthority(AuthoritiesConstants.ADMIN)
            // .antMatchers("/api/**").authenticated()
             .antMatchers("/api/**").permitAll()
             .antMatchers("/management/health").permitAll()

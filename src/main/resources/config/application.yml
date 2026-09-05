@@ -121,10 +121,6 @@ management:
           autotime:
             enabled: true
 
-mongock:
-  migration-scan-package:
-    - edu.upb.webpool.config.dbmigrations
-
 twilio:
   sid: ACcebdcdefe7d0e58dabe371d8f11bb0d9
   token: 7f8f30078e8c47d4e779f53171b59ab1
@@ -226,3 +222,7 @@ jhipster:
 # ===================================================================
 
 # application:
+
+webpool:
+  signing:
+    service-key: ${WEBPOOL_SIGN_SERVICE_KEY:webpool-sign-internal-demo-token}

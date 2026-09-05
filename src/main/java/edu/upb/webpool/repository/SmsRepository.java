@@ -1,8 +1,8 @@
 package edu.upb.webpool.repository;
 
 import edu.upb.webpool.domain.Sms;
-import edu.upb.webpool.domain.WebRtc;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.cassandra.repository.AllowFiltering;
+import org.springframework.data.cassandra.repository.CassandraRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,11 +12,14 @@ import java.util.List;
  */
 @SuppressWarnings("unused")
 @Repository
-public interface SmsRepository extends MongoRepository<Sms, String> {
+public interface SmsRepository extends CassandraRepository<Sms, String> {
+    @AllowFiltering
     List<Sms> findByPoolAndOwner(String pool, String owner);
 
+    @AllowFiltering
     List<Sms> findByPool(String pool);
 
+    @AllowFiltering
     void deleteByPoolAndOwner(String pool, String owner);
 
 }

@@ -7,21 +7,13 @@ import com.twilio.type.PhoneNumber;
 import edu.upb.webpool.domain.Pool;
 import edu.upb.webpool.domain.Sms;
 import edu.upb.webpool.domain.User;
-import edu.upb.webpool.domain.WebRtc;
 import edu.upb.webpool.repository.SmsRepository;
 import edu.upb.webpool.repository.UserRepository;
-import edu.upb.webpool.repository.WebRtcRepository;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.domain.Example;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.mapping.Field;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,6 +29,7 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 /**
  * REST controller for managing {@link Pool}.
@@ -93,12 +86,13 @@ public class SmsResource {
                 .create();
         }
 
-        repository.save(new Sms()
+        Sms sms = new Sms()
             .owner(user)
             .pool(pool)
             .data(String.valueOf(randomNumber))
-            .date(Instant.now())
-        );
+            .date(Instant.now());
+        sms.setId(UUID.randomUUID().toString());
+        repository.save(sms);
     }
 
 }
