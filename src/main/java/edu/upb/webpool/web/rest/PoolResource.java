@@ -4,6 +4,7 @@ import edu.upb.webpool.domain.Pool;
 import edu.upb.webpool.repository.PoolRepository;
 import edu.upb.webpool.repository.UserSecuritySettingsRepository;
 import edu.upb.webpool.service.PoolResultsEmailService;
+import edu.upb.webpool.service.AnalyticsProjectionPublisher;
 import edu.upb.webpool.web.rest.errors.BadRequestAlertException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -49,15 +50,18 @@ public class PoolResource {
     private final PoolRepository poolRepository;
     private final UserSecuritySettingsRepository userRepository;
     private final PoolResultsEmailService poolResultsEmailService;
+    private final AnalyticsProjectionPublisher analyticsProjectionPublisher;
 
     public PoolResource(
         PoolRepository poolRepository,
         UserSecuritySettingsRepository userRepository,
-        PoolResultsEmailService poolResultsEmailService
+        PoolResultsEmailService poolResultsEmailService,
+        AnalyticsProjectionPublisher analyticsProjectionPublisher
     ) {
         this.poolRepository = poolRepository;
         this.userRepository = userRepository;
         this.poolResultsEmailService = poolResultsEmailService;
+        this.analyticsProjectionPublisher = analyticsProjectionPublisher;
     }
 
     /**
@@ -76,6 +80,7 @@ public class PoolResource {
         pool.setId(UUID.randomUUID().toString());
         pool.setOwner(currentUser());
         Pool result = poolRepository.save(pool);
+        analyticsProjectionPublisher.publishPool(result);
         return ResponseEntity
             .created(new URI("/api/pools/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, ENTITY_NAME, result.getId()))
@@ -113,6 +118,7 @@ public class PoolResource {
         );
 
         Pool result = poolRepository.save(pool);
+        analyticsProjectionPublisher.publishPool(result);
         return ResponseEntity
             .ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, pool.getId()))
@@ -180,6 +186,8 @@ public class PoolResource {
                 return existingPool;
             })
             .map(poolRepository::save);
+
+        result.ifPresent(analyticsProjectionPublisher::publishPool);
 
         return ResponseUtil.wrapOrNotFound(result, HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, pool.getId()));
     }
@@ -269,6 +277,7 @@ public class PoolResource {
     public ResponseEntity<Void> deletePool(@PathVariable String id) {
         log.debug("REST request to delete Pool : {}", id);
         poolRepository.deleteById(id);
+        analyticsProjectionPublisher.deletePool(id);
         return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, true, ENTITY_NAME, id)).build();
     }
 }

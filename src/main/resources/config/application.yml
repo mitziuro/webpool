@@ -226,3 +226,5 @@ jhipster:
 webpool:
   signing:
     service-key: ${WEBPOOL_SIGN_SERVICE_KEY:webpool-sign-internal-demo-token}
+  analytics:
+    service-key: ${WEBPOOL_ANALYTICS_SERVICE_KEY:webpool-analytics-internal-demo-token}

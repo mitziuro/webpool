@@ -6,6 +6,7 @@ import edu.upb.webpool.client.dto.SignResponse;
 import edu.upb.webpool.client.dto.VerifyRequest;
 import edu.upb.webpool.client.dto.VerifyResponse;
 import edu.upb.webpool.domain.PoolEntry;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,7 +51,10 @@ public class PoolEntrySignatureService {
         payload.put("pool", entry.getPool());
         payload.put("optionValue", entry.getOptionValue());
         payload.put("option", entry.getOption());
-        payload.put("date", entry.getDate() == null ? null : entry.getDate().toString());
+        // Cassandra timestamps have millisecond precision. Canonicalize to the
+        // same precision before signing so a persisted vote hashes identically
+        // when it is read back and verified.
+        payload.put("date", entry.getDate() == null ? null : entry.getDate().truncatedTo(ChronoUnit.MILLIS).toString());
         payload.put("owner", entry.getOwner());
         payload.put("type", entry.getType());
         payload.put("isFinal", entry.getIsFinal());

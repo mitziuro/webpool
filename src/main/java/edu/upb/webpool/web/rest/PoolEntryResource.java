@@ -5,11 +5,13 @@ import edu.upb.webpool.domain.PoolEntry;
 import edu.upb.webpool.repository.PoolEntryRepository;
 import edu.upb.webpool.repository.PoolRepository;
 import edu.upb.webpool.service.PoolEntrySignatureService;
+import edu.upb.webpool.service.AnalyticsProjectionPublisher;
 import edu.upb.webpool.service.VoteConfirmationValidator;
 import edu.upb.webpool.client.dto.VerifyResponse;
 import edu.upb.webpool.web.rest.errors.BadRequestAlertException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -47,17 +49,21 @@ public class PoolEntryResource {
 
     private final PoolEntrySignatureService poolEntrySignatureService;
 
+    private final AnalyticsProjectionPublisher analyticsProjectionPublisher;
+
     @Autowired
     private PoolRepository poolRepository;
 
     public PoolEntryResource(
         PoolEntryRepository poolEntryRepository,
         VoteConfirmationValidator voteConfirmationValidator,
-        PoolEntrySignatureService poolEntrySignatureService
+        PoolEntrySignatureService poolEntrySignatureService,
+        AnalyticsProjectionPublisher analyticsProjectionPublisher
     ) {
         this.poolEntryRepository = poolEntryRepository;
         this.voteConfirmationValidator = voteConfirmationValidator;
         this.poolEntrySignatureService = poolEntrySignatureService;
+        this.analyticsProjectionPublisher = analyticsProjectionPublisher;
     }
 
     /**
@@ -79,6 +85,13 @@ public class PoolEntryResource {
 
         if(pool == null) {
             throw new Exception();
+        }
+
+        if (pool.getEndDate() != null && !pool.getEndDate().isAfter(Instant.now())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.GONE,
+                "Termenul-limită al sondajului a expirat"
+            );
         }
 
         if (
@@ -112,6 +125,7 @@ public class PoolEntryResource {
 
         poolEntryRepository.findByPoolAndOwner(poolEntry.getPool(), poolEntry.getOwner()).stream().forEach(p -> poolEntryRepository.delete(p));
         PoolEntry result = poolEntryRepository.save(poolEntry);
+        analyticsProjectionPublisher.publishVote(result);
         voteConfirmationValidator.consume(confirmationMethod, voterEmail);
         return ResponseEntity
             .created(new URI("/api/pool-entries/" + result.getId()))
@@ -147,6 +161,7 @@ public class PoolEntryResource {
         }
 
         PoolEntry result = poolEntryRepository.save(poolEntry);
+        analyticsProjectionPublisher.publishVote(result);
         return ResponseEntity
             .ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, poolEntry.getId()))
@@ -210,6 +225,8 @@ public class PoolEntryResource {
             })
             .map(poolEntryRepository::save);
 
+        result.ifPresent(analyticsProjectionPublisher::publishVote);
+
         return ResponseUtil.wrapOrNotFound(
             result,
             HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, poolEntry.getId())
@@ -267,6 +284,7 @@ public class PoolEntryResource {
     public ResponseEntity<Void> deletePoolEntry(@PathVariable String id) {
         log.debug("REST request to delete PoolEntry : {}", id);
         poolEntryRepository.deleteById(id);
+        analyticsProjectionPublisher.deleteVote(id);
         return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, true, ENTITY_NAME, id)).build();
     }
 
